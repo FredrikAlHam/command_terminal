@@ -6,12 +6,15 @@ namespace CommandTerminal
 {
     public static class BuiltinCommands
     {
-        [RegisterCommand(Help = "Clear the command console", MaxArgCount = 0)]
+        [RegisterCommand(Help = "Does nothing")]
+        static void CommandNoop(CommandArg[] args) { }
+
+        [RegisterCommand(Help = "Clears the Command Console", MaxArgCount = 0)]
         static void CommandClear(CommandArg[] args) {
             Terminal.Buffer.Clear();
         }
 
-        [RegisterCommand(Help = "Display help information about a command", MaxArgCount = 1)]
+        [RegisterCommand(Help = "Lists all Commands or displays help documentation of a Command", MaxArgCount = 1)]
         static void CommandHelp(CommandArg[] args) {
             if (args.Length == 0) {
                 foreach (var command in Terminal.Shell.Commands) {
@@ -27,18 +30,16 @@ namespace CommandTerminal
                 return;
             }
 
-            var info = Terminal.Shell.Commands[command_name];
+            string help = Terminal.Shell.Commands[command_name].help;
 
-            if (info.help == null) {
+            if (help == null) {
                 Terminal.Log("{0} does not provide any help documentation.", command_name);
-            } else if (info.hint == null) {
-                Terminal.Log(info.help);
             } else {
-                Terminal.Log("{0}\nUsage: {1}", info.help, info.hint);
+                Terminal.Log(help);
             }
         }
 
-        [RegisterCommand(Help = "Time the execution of a command", MinArgCount = 1)]
+        [RegisterCommand(Help = "Times the execution of a Command", MinArgCount = 1)]
         static void CommandTime(CommandArg[] args) {
             var sw = new Stopwatch();
             sw.Start();
@@ -49,17 +50,17 @@ namespace CommandTerminal
             Terminal.Log("Time: {0}ms", (double)sw.ElapsedTicks / 10000);
         }
 
-        [RegisterCommand(Help = "Output message")]
+        [RegisterCommand(Help = "Outputs message")]
         static void CommandPrint(CommandArg[] args) {
             Terminal.Log(JoinArguments(args));
         }
 
     #if DEBUG
-        [RegisterCommand(Help = "Output the stack trace of the previous message", MaxArgCount = 0)]
+        [RegisterCommand(Help = "Outputs the StackTrace of the previous message", MaxArgCount = 0)]
         static void CommandTrace(CommandArg[] args) {
             int log_count = Terminal.Buffer.Logs.Count;
 
-            if (log_count - 2 < 0) {
+            if (log_count - 2 <  0) {
                 Terminal.Log("Nothing to trace.");
                 return;
             }
@@ -74,41 +75,20 @@ namespace CommandTerminal
         }
     #endif
 
-        [RegisterCommand(Help = "List all variables or set a variable value")]
-        static void CommandSet(CommandArg[] args) {
-            if (args.Length == 0) {
-                foreach (var kv in Terminal.Shell.Variables) {
-                    Terminal.Log("{0}: {1}", kv.Key.PadRight(16), kv.Value);
-                }
-                return;
-            }
-
-            string variable_name = args[0].String;
-
-            if (variable_name[0] == '$') {
-                Terminal.Log(TerminalLogType.Warning, "Warning: Variable name starts with '$', '${0}'.", variable_name);
-            }
-
-            Terminal.Shell.SetVariable(variable_name, JoinArguments(args, 1));
-        }
-
-        [RegisterCommand(Help = "No operation")]
-        static void CommandNoop(CommandArg[] args) { }
-
-        [RegisterCommand(Help = "Quit running application", MaxArgCount = 0)]
+        [RegisterCommand(Help = "Quits running Application", MaxArgCount = 0)]
         static void CommandQuit(CommandArg[] args) {
-        #if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-        #else
+        //#if UNITY_EDITOR
+            //UnityEditor.EditorApplication.isPlaying = false;
+        //#else
             Application.Quit();
-        #endif
+        //#endif
         }
 
-        static string JoinArguments(CommandArg[] args, int start = 0) {
+        static string JoinArguments(CommandArg[] args) {
             var sb = new StringBuilder();
             int arg_length = args.Length;
 
-            for (int i = start; i < arg_length; i++) {
+            for (int i = 0; i < arg_length; i++) {
                 sb.Append(args[i].String);
 
                 if (i < arg_length - 1) {
